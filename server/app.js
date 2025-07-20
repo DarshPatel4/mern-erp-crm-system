@@ -12,10 +12,12 @@ app.use(express.json());
 // Import routes
 const authRoutes = require('./routes/auth');
 const protectedRoutes = require('./routes/protected');
+const dashboardRoutes = require('./routes/dashboard');
 
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/protected', protectedRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
