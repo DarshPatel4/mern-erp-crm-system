@@ -32,6 +32,7 @@ export default function EmployeeDirectoryTable({ showAddButton, filters = {} }) 
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', department: '', designation: '', hireDate: '', status: 'Active' });
   const [formError, setFormError] = useState('');
+  const [selectedRows, setSelectedRows] = useState([]);
 
   const limit = 5;
 
@@ -106,6 +107,22 @@ export default function EmployeeDirectoryTable({ showAddButton, filters = {} }) 
     fetchEmployees({ page: 1, limit, search, department: department === 'All' ? '' : department, status: status === 'All' ? '' : status }).then(res => setEmployees(res.employees || []));
   };
 
+  // Checkbox handlers
+  const isAllSelected = employees.length > 0 && selectedRows.length === employees.length;
+  const isIndeterminate = selectedRows.length > 0 && selectedRows.length < employees.length;
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedRows([]);
+    } else {
+      setSelectedRows(employees.map(emp => emp._id));
+    }
+  };
+
+  const handleSelectRow = (id) => {
+    setSelectedRows(prev => prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]);
+  };
+
   return (
     <div>
       {showAddButton && (
@@ -157,6 +174,15 @@ export default function EmployeeDirectoryTable({ showAddButton, filters = {} }) 
           <table className="min-w-full text-sm">
             <thead>
               <tr className="text-gray-500 text-xs uppercase border-b">
+                <th className="py-2 px-3 text-left">
+                  <input
+                    type="checkbox"
+                    className="accent-violet-500 w-4 h-4 rounded border-gray-300"
+                    checked={isAllSelected}
+                    ref={el => { if (el) el.indeterminate = isIndeterminate; }}
+                    onChange={handleSelectAll}
+                  />
+                </th>
                 <th className="py-2 px-3 text-left">Employee</th>
                 <th className="py-2 px-3 text-left">Department</th>
                 <th className="py-2 px-3 text-left">Email</th>
@@ -169,6 +195,14 @@ export default function EmployeeDirectoryTable({ showAddButton, filters = {} }) 
             <tbody>
               {employees.map(emp => (
                 <tr key={emp._id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-3">
+                    <input
+                      type="checkbox"
+                      className="accent-violet-500 w-4 h-4 rounded border-gray-300"
+                      checked={selectedRows.includes(emp._id)}
+                      onChange={() => handleSelectRow(emp._id)}
+                    />
+                  </td>
                   <td className="py-3 px-3 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white" style={{background: '#f3f4f6', color: '#6366f1'}}>{getInitials(emp.name)}</div>
                     <div className="font-semibold text-gray-800">{emp.name}</div>

@@ -18,6 +18,9 @@ export default function DepartmentsDesignations() {
   const [form, setForm] = useState({ name: '', color: COLOR_OPTIONS[0].value });
   const [formError, setFormError] = useState('');
   const [adding, setAdding] = useState(false);
+  const [designations, setDesignations] = useState([]);
+  const [loadingDesignations, setLoadingDesignations] = useState(true);
+  const [designationError, setDesignationError] = useState('');
 
   const fetchDepartments = () => {
     setLoading(true);
@@ -38,8 +41,28 @@ export default function DepartmentsDesignations() {
       });
   };
 
+  const fetchDesignations = () => {
+    setLoadingDesignations(true);
+    fetch('http://localhost:5000/api/designations', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json',
+      },
+    })
+      .then(res => res.json())
+      .then(data => {
+        setDesignations(data);
+        setLoadingDesignations(false);
+      })
+      .catch(() => {
+        setDesignationError('Failed to load designations');
+        setLoadingDesignations(false);
+      });
+  };
+
   useEffect(() => {
     fetchDepartments();
+    fetchDesignations();
   }, []);
 
   const handleAddDepartment = async (e) => {
@@ -104,24 +127,29 @@ export default function DepartmentsDesignations() {
           </div>
         )}
       </div>
-      {/* Designations (mock for now) */}
+      {/* Designations (real data) */}
       <div className="bg-white rounded-2xl p-6 shadow flex-1">
         <div className="flex items-center justify-between mb-4">
           <div className="font-semibold text-lg text-gray-800">Designations</div>
           <button className="px-2 py-1 rounded bg-violet-100 text-violet-700 text-xs font-semibold">+</button>
         </div>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3 rounded-lg px-4 py-2 bg-gray-50">
-            <span className="font-semibold flex-1">Software Engineer</span>
-            <span className="text-xs text-gray-500">Engineering</span>
-            <span className="text-xs">14 employees</span>
+        {loadingDesignations ? (
+          <div className="text-center py-10 text-gray-400">Loading...</div>
+        ) : designationError ? (
+          <div className="text-center py-10 text-red-500">{designationError}</div>
+        ) : designations.length === 0 ? (
+          <div className="text-center py-10 text-gray-400">No designations found.</div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {designations.map(des => (
+              <div key={des._id} className="flex items-center gap-3 rounded-lg px-4 py-2 bg-gray-50">
+                <span className="font-semibold flex-1">{des.name}</span>
+                <span className="text-xs text-gray-500">{typeof des.department === 'object' ? des.department.name : des.department}</span>
+                <span className="text-xs">{des.employeeCount} employees</span>
+              </div>
+            ))}
           </div>
-          <div className="flex items-center gap-3 rounded-lg px-4 py-2 bg-gray-50">
-            <span className="font-semibold flex-1">Senior Developer</span>
-            <span className="text-xs text-gray-500">Engineering</span>
-            <span className="text-xs">8 employees</span>
-          </div>
-        </div>
+        )}
       </div>
       {/* Add Department Modal */}
       {showAddModal && (
