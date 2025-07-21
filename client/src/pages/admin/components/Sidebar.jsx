@@ -69,7 +69,7 @@ export default function Sidebar() {
         <div className="bg-gray-200 text-gray-700 rounded-full w-10 h-10 flex items-center justify-center font-bold">{initials}</div>
         <div>
           <div className="font-semibold text-sm">{user?.name || 'John Doe'}</div>
-          <div className="text-xs text-gray-400">Administrator</div>
+          <div className="text-xs text-gray-400">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Administrator'}</div>
         </div>
         <button className="ml-auto text-gray-400 hover:text-gray-700">
           <FaBell />

@@ -22,4 +22,50 @@ exports.getEmployees = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch employees', details: err.message });
   }
+};
+
+exports.createEmployee = async (req, res) => {
+  try {
+    const { name, email, department, designation, hireDate, status } = req.body;
+    const employee = new Employee({ name, email, department, designation, hireDate, status });
+    await employee.save();
+    res.status(201).json(employee);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create employee', details: err.message });
+  }
+};
+
+exports.getEmployeeById = async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id);
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+    res.json(employee);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch employee', details: err.message });
+  }
+};
+
+exports.updateEmployee = async (req, res) => {
+  try {
+    const { name, email, department, designation, hireDate, status } = req.body;
+    const employee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      { name, email, department, designation, hireDate, status },
+      { new: true, runValidators: true }
+    );
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+    res.json(employee);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update employee', details: err.message });
+  }
+};
+
+exports.deleteEmployee = async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndDelete(req.params.id);
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+    res.json({ message: 'Employee deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete employee', details: err.message });
+  }
 }; 

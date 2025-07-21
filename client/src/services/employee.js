@@ -10,4 +10,53 @@ export async function fetchEmployees({ page = 1, limit = 10, search = '', depart
     },
   });
   return res.json();
+}
+
+export async function createEmployee(data) {
+  const token = localStorage.getItem('token');
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function getEmployeeById(id) {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_URL}/${id}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  return res.json();
+}
+
+export async function updateEmployee(id, data) {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_URL}/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function deleteEmployee(id) {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_URL}/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  return res.json();
 } 
