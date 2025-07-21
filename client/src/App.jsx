@@ -20,7 +20,7 @@ function App() {
         <Route element={<PrivateRoute allowedRoles={['admin']} />}>
           <Route path="/admin" element={<AdminDashboard />} />
         </Route>
-        <Route element={<PrivateRoute allowedRoles={['hr']} />}>
+        <Route element={<PrivateRoute allowedRoles={['hr', 'admin']} />}>
           <Route path="/hr" element={<HRDashboard />} />
         </Route>
         <Route element={<PrivateRoute allowedRoles={['sales']} />}>
