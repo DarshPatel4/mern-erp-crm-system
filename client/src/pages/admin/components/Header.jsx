@@ -1,18 +1,36 @@
 import { FaBell } from 'react-icons/fa';
 import { getCurrentUser, logout } from '../../../services/api';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export default function Header() {
   const user = getCurrentUser();
   const initials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) : 'JD';
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const profileRef = useRef(null);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
 
   return (
     <header className="flex items-center justify-between px-8 py-4 bg-white border-b">
@@ -29,8 +47,8 @@ export default function Header() {
         </button>
         <div
           className="relative flex items-center gap-2 cursor-pointer group"
-          onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => setOpen(false)}
+          ref={profileRef}
+          onClick={() => setOpen((prev) => !prev)}
         >
           <div className="bg-gray-200 text-gray-700 rounded-full w-9 h-9 flex items-center justify-center font-bold">{initials}</div>
           <div className="text-sm font-medium text-gray-800">{user?.name || 'John Doe'}</div>
