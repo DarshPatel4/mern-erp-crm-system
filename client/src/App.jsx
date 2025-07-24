@@ -1,10 +1,11 @@
-
+// client/src/App.jsx
 import Login from './pages/login/Login';
 import Signup from './pages/signup/Signup';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import HRDashboard from './pages/hr/HRDashboard';
 import SalesDashboard from './pages/sales/SalesDashboard';
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
+import SettingsPage from './pages/admin/SettingsPage'; // <--- NEW IMPORT
 import PrivateRoute from './PrivateRoute';
 import './App.css';
 
@@ -19,6 +20,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route element={<PrivateRoute allowedRoles={['admin']} />}>
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/settings" element={<SettingsPage />} /> {/* <--- NEW ROUTE */}
         </Route>
         <Route element={<PrivateRoute allowedRoles={['hr', 'admin']} />}>
           <Route path="/hr" element={<HRDashboard />} />
