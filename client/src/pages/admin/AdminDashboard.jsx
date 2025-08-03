@@ -51,5 +51,5 @@ export default function AdminDashboard() {
   );
 }
 
-// Attach DashboardContent to AdminDashboard for routing
+// Attach DashboardContent to AdminDashboard for routing 
 AdminDashboard.DashboardContent = DashboardContent; 
