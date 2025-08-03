@@ -10,7 +10,7 @@ const navItems = [
   { label: 'Invoices', icon: <FaFileInvoice />, path: '/invoices' },
   { label: 'Analytics', icon: <FaChartBar />, section: 'REPORTS', path: '/analytics' },
   { label: 'Financial', icon: <FaChartBar />, section: 'REPORTS', path: '/financial' },
-  { label: 'Settings', icon: <FaCog />, section: 'SETTINGS', path: '/settings' },
+  { label: 'Settings', icon: <FaCog />, section: 'SETTINGS', path: '/admin/settings' },
   { label: 'Help', icon: <FaQuestionCircle />, section: 'SETTINGS', path: '/help' },
 ];
 
@@ -19,6 +19,15 @@ export default function Sidebar() {
   const initials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) : 'JD';
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Helper function to check if a route is active (including nested routes)
+  const isActiveRoute = (path) => {
+    if (path === '/admin') {
+      return location.pathname === '/admin' || location.pathname === '/admin/';
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
   return (
     <aside className="h-screen w-64 bg-white border-r flex flex-col justify-between">
       <div>
@@ -35,7 +44,7 @@ export default function Sidebar() {
             <div
               key={item.label}
               onClick={() => navigate(item.path)}
-              className={`flex items-center gap-3 px-6 py-2 cursor-pointer rounded-lg mb-1 ${location.pathname === item.path ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+              className={`flex items-center gap-3 px-6 py-2 cursor-pointer rounded-lg mb-1 ${isActiveRoute(item.path) ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
             >
               <span className="text-lg">{item.icon}</span>
               <span>{item.label}</span>
@@ -46,7 +55,7 @@ export default function Sidebar() {
             <div
               key={item.label}
               onClick={() => navigate(item.path)}
-              className={`flex items-center gap-3 px-6 py-2 cursor-pointer rounded-lg mb-1 ${location.pathname === item.path ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+              className={`flex items-center gap-3 px-6 py-2 cursor-pointer rounded-lg mb-1 ${isActiveRoute(item.path) ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
             >
               <span className="text-lg">{item.icon}</span>
               <span>{item.label}</span>
@@ -57,7 +66,7 @@ export default function Sidebar() {
             <div
               key={item.label}
               onClick={() => navigate(item.path)}
-              className={`flex items-center gap-3 px-6 py-2 cursor-pointer rounded-lg mb-1 ${location.pathname === item.path ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+              className={`flex items-center gap-3 px-6 py-2 cursor-pointer rounded-lg mb-1 ${isActiveRoute(item.path) ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
             >
               <span className="text-lg">{item.icon}</span>
               <span>{item.label}</span>

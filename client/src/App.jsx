@@ -5,7 +5,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import HRDashboard from './pages/hr/HRDashboard';
 import SalesDashboard from './pages/sales/SalesDashboard';
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
-import SettingsPage from './pages/admin/SettingsPage'; // <--- NEW IMPORT
+import Settings from './pages/settings/Settings';
 import PrivateRoute from './PrivateRoute';
 import './App.css';
 
@@ -19,8 +19,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route element={<PrivateRoute allowedRoles={['admin']} />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/settings" element={<SettingsPage />} /> {/* <--- NEW ROUTE */}
+          <Route path="/admin" element={<AdminDashboard />}>
+            <Route index element={<AdminDashboard.DashboardContent />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
         </Route>
         <Route element={<PrivateRoute allowedRoles={['hr', 'admin']} />}>
           <Route path="/hr" element={<HRDashboard />} />

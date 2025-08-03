@@ -20,6 +20,8 @@ const candidateRoutes = require('./routes/candidate');
 const departmentRoutes = require('./routes/department');
 const designationRoutes = require('./routes/designation');
 const hrStatsRoutes = require('./routes/hrStats');
+const roleRoutes = require('./routes/role');
+const settingsRoutes = require('./routes/settings');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -32,6 +34,8 @@ app.use('/api/candidates', candidateRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/designations', designationRoutes);
 app.use('/api/hr-stats', hrStatsRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
