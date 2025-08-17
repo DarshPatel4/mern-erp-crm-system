@@ -6,10 +6,10 @@ export default function EmailSmsConfigModal({ onClose }) {
   const [emailConfig, setEmailConfig] = useState({
     smtpHost: 'smtp.gmail.com',
     smtpPort: '587',
-    username: 'noreply@nexuserp.com',
+    username: 'erpcrm@gmail.com',
     password: '',
     fromName: 'NexusERP',
-    fromEmail: 'noreply@nexuserp.com',
+    fromEmail: 'darshpatel2531@gmail.com',
     encryption: 'tls'
   });
 
@@ -17,7 +17,7 @@ export default function EmailSmsConfigModal({ onClose }) {
     provider: 'twilio',
     accountSid: '',
     authToken: '',
-    fromNumber: '+1234567890',
+    fromNumber: '+919979099218',
     apiKey: ''
   });
 
