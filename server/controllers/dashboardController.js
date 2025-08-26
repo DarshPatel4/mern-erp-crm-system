@@ -21,11 +21,19 @@ exports.getDashboardSummary = async (req, res) => {
     const tasksDueToday = await Task.countDocuments({ dueDate: { $gte: today, $lt: tomorrow }, status: 'Pending' });
     // Total Leads
     const totalLeads = await Lead.countDocuments();
-    // Leads Change (mocked for now)
-    const leadsChange = 12.5;
-    // Leads Target (mocked)
-    const leadsTarget = 150;
-    // Leads Achieved (mocked)
+    // Calculate leads change (comparing current month vs previous month)
+    const currentMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const previousMonth = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
+    const currentMonthLeads = await Lead.countDocuments({ createdAt: { $gte: currentMonth } });
+    const previousMonthLeads = await Lead.countDocuments({ 
+      createdAt: { $gte: previousMonth, $lt: currentMonth } 
+    });
+    const leadsChange = previousMonthLeads > 0 ? 
+      ((currentMonthLeads - previousMonthLeads) / previousMonthLeads * 100).toFixed(1) : 
+      currentMonthLeads > 0 ? 100 : 0;
+    // Leads Target (set to 150 or 20% more than current total, whichever is higher)
+    const leadsTarget = Math.max(150, Math.round(totalLeads * 1.2));
+    // Leads Achieved (percentage of target achieved)
     const leadsAchieved = Math.round((totalLeads / leadsTarget) * 100);
     // Employee Count
     const employeeCount = await Employee.countDocuments();
@@ -67,17 +75,50 @@ exports.getDashboardSummary = async (req, res) => {
       { type: 'warning', message: 'Task deadline approaching', detail: 'Website redesign project', time: '3 hours ago' },
       { type: 'comment', message: 'New comment on task', detail: 'Mobile app development', time: '5 hours ago' }
     ];
-    // Sales Pipeline (real counts by status)
-    const pipelineStages = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won'];
+    // Sales Pipeline (real counts by lead status - using actual statuses from Lead model)
+    const pipelineStages = ['New', 'Contacted', 'Converted', 'Lost'];
     const salesPipeline = await Promise.all(
       pipelineStages.map(async label => ({ label, value: await Lead.countDocuments({ status: label }) }))
     );
+    
+    // Additional lead statistics for dashboard
+    const leadStats = await Lead.aggregate([
+      { $match: { isActive: true } },
+      {
+        $group: {
+          _id: null,
+          totalLeads: { $sum: 1 },
+          convertedLeads: { $sum: { $cond: [{ $eq: ['$status', 'Converted'] }, 1, 0] } },
+          newLeads: { $sum: { $cond: [{ $eq: ['$status', 'New'] }, 1, 0] } },
+          contactedLeads: { $sum: { $cond: [{ $eq: ['$status', 'Contacted'] }, 1, 0] } },
+          lostLeads: { $sum: { $cond: [{ $eq: ['$status', 'Lost'] }, 1, 0] } },
+          highPriorityLeads: { $sum: { $cond: [{ $eq: ['$priority', 'High'] }, 1, 0] } },
+          totalValue: { $sum: '$estimatedValue' }
+        }
+      }
+    ]);
     // Upcoming Tasks (next 4 pending tasks by due date)
     const upcomingTasksDocs = await Task.find({ status: 'Pending' }).sort({ dueDate: 1 }).limit(4);
     const upcomingTasks = upcomingTasksDocs.map(t => ({
       title: t.title,
       due: `Due in ${Math.ceil((t.dueDate - new Date()) / (1000*60*60*24))} days`,
       priority: t.priority.charAt(0).toUpperCase() + t.priority.slice(1)
+    }));
+
+    // Recent Leads (last 4 leads created)
+    const recentLeadsDocs = await Lead.find({ isActive: true })
+      .populate('assignedTo', 'name')
+      .sort({ createdAt: -1 })
+      .limit(4);
+    const recentLeads = recentLeadsDocs.map(lead => ({
+      id: lead._id,
+      company: lead.company,
+      email: lead.email,
+      status: lead.status,
+      priority: lead.priority,
+      value: lead.estimatedValue || 0,
+      lastContact: lead.lastContact,
+      assignedTo: lead.assignedTo?.name || 'Unassigned'
     }));
     res.json({
       welcome: {
@@ -106,10 +147,20 @@ exports.getDashboardSummary = async (req, res) => {
         highTasks,
         normalTasks
       },
+      leadStats: leadStats[0] || {
+        totalLeads: 0,
+        convertedLeads: 0,
+        newLeads: 0,
+        contactedLeads: 0,
+        lostLeads: 0,
+        highPriorityLeads: 0,
+        totalValue: 0
+      },
       performance,
       notifications,
       salesPipeline,
-      upcomingTasks
+      upcomingTasks,
+      recentLeads
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load dashboard data', details: err.message });

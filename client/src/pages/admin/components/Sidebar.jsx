@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 const navItems = [
   { label: 'Dashboard', icon: <FaHome />, path: '/admin' },
-  { label: 'Leads', icon: <FaUserFriends />, path: '/leads' },
+  { label: 'Leads', icon: <FaUserFriends />, path: '/admin/leads' },
   { label: 'Employees', icon: <FaUsers />, path: '/hr' },
   { label: 'Tasks', icon: <FaTasks />, path: '/tasks' },
   { label: 'Invoices', icon: <FaFileInvoice />, path: '/invoices' },

@@ -1,19 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js';
-import { fetchDashboardSummary } from '../../../services/dashboard';
+import { useDashboardData } from '../../../services/dashboard';
 ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 export default function PerformanceChart() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchDashboardSummary().then(res => {
-      setData(res.performance);
-      setLoading(false);
-    });
-  }, []);
+  const { data, loading } = useDashboardData();
 
   if (loading) {
     return <div className="bg-white rounded-2xl p-6 shadow mb-8 animate-pulse h-64" />;

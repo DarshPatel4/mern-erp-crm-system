@@ -1,17 +1,8 @@
-import { useEffect, useState } from 'react';
 import { FaUserFriends, FaUsers, FaDollarSign, FaTasks } from 'react-icons/fa';
-import { fetchDashboardSummary } from '../../../services/dashboard';
+import { useDashboardData } from '../../../services/dashboard';
 
 export default function KPICards() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchDashboardSummary().then(res => {
-      setData(res);
-      setLoading(false);
-    });
-  }, []);
+  const { data, loading } = useDashboardData();
 
   if (loading) {
     return <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8 animate-pulse h-44" />;

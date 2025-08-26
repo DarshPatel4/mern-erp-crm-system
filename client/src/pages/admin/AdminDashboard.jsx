@@ -8,6 +8,8 @@ function DashboardContent() {
     <main className="flex-1 p-8 bg-gray-50 overflow-y-auto h-[calc(100vh-80px)]">
       <WelcomeBanner />
       <KPICards />
+      <LeadOverview />
+      <LeadAnalytics />
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2">
           <PerformanceChart />
@@ -17,6 +19,7 @@ function DashboardContent() {
           </div>
         </div>
         <div>
+          <RecentLeads />
           <QuickNotifications />
           <QuickActions />
         </div>
@@ -34,6 +37,9 @@ import QuickNotifications from './components/QuickNotifications';
 import SalesPipeline from './components/SalesPipeline';
 import UpcomingTasks from './components/UpcomingTasks';
 import QuickActions from './components/QuickActions';
+import LeadOverview from './components/LeadOverview';
+import LeadAnalytics from './components/LeadAnalytics';
+import RecentLeads from './components/RecentLeads';
 
 export default function AdminDashboard() {
   return (

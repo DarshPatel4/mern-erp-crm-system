@@ -6,6 +6,7 @@ import HRDashboard from './pages/hr/HRDashboard';
 import SalesDashboard from './pages/sales/SalesDashboard';
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
 import Settings from './pages/settings/Settings';
+import LeadManagement from './pages/leads/LeadManagement';
 import PrivateRoute from './PrivateRoute';
 import './App.css';
 
@@ -22,6 +23,7 @@ function App() {
           <Route path="/admin" element={<AdminDashboard />}>
             <Route index element={<AdminDashboard.DashboardContent />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="leads" element={<LeadManagement />} />
           </Route>
         </Route>
         <Route element={<PrivateRoute allowedRoles={['hr', 'admin']} />}>
