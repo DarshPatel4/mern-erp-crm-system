@@ -20,7 +20,7 @@ export default function LeadManagement() {
     current: 1,
     total: 1,
     totalRecords: 0,
-    limit: 10
+    limit: 5
   });
   const [filters, setFilters] = useState({
     search: '',
