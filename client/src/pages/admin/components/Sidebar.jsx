@@ -7,7 +7,7 @@ const navItems = [
   { label: 'Leads', icon: <FaUserFriends />, path: '/admin/leads' },
   { label: 'Employees', icon: <FaUsers />, path: '/hr' },
   { label: 'Tasks', icon: <FaTasks />, path: '/tasks' },
-  { label: 'Invoices', icon: <FaFileInvoice />, path: '/invoices' },
+  { label: 'Invoices', icon: <FaFileInvoice />, path: '/admin/invoices' },
   { label: 'Analytics', icon: <FaChartBar />, section: 'REPORTS', path: '/analytics' },
   { label: 'Financial', icon: <FaChartBar />, section: 'REPORTS', path: '/financial' },
   { label: 'Settings', icon: <FaCog />, section: 'SETTINGS', path: '/admin/settings' },
