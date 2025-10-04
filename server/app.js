@@ -29,6 +29,7 @@ const employeeAttendanceRoutes = require('./routes/employeeAttendance');
 const employeeLeaveRoutes = require('./routes/employeeLeave');
 const employeePayrollRoutes = require('./routes/employeePayroll');
 const employeeProfileRoutes = require('./routes/employeeProfile');
+const taskRoutes = require('./routes/task');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -50,6 +51,7 @@ app.use('/api/employee-attendance', employeeAttendanceRoutes);
 app.use('/api/employee-leave', employeeLeaveRoutes);
 app.use('/api/employee-payroll', employeePayrollRoutes);
 app.use('/api/employee-profile', employeeProfileRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
