@@ -112,6 +112,7 @@ Manages employee notifications with read/unread status and priority levels.
 - `POST /api/employee-profile/:employeeId/request-update` - Request profile update
 - `GET /api/employee-profile/:employeeId/update-history` - Get update history
 
+
 ## Controllers
 
 ### 1. employeeDashboardController.js
