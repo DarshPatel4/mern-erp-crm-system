@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaTimes, FaUpload, FaBuilding, FaMapMarkerAlt, FaPhone, FaEnvelope, FaGlobe } from 'react-icons/fa';
-import { fetchCompanyProfile, updateCompanyProfile } from '../../../services/settings';
+import { fetchCompanyProfile, updateCompanyProfile, uploadCompanyLogo } from '../../../services/settings';
 
 export default function CompanyProfileModal({ onClose }) {
   const [formData, setFormData] = useState({
@@ -81,7 +81,20 @@ export default function CompanyProfileModal({ onClose }) {
     e.preventDefault();
     try {
       setSaving(true);
-      await updateCompanyProfile(formData);
+      let payload = { ...formData };
+      
+      // Handle logo upload separately if it's a file
+      if (formData.logo && typeof formData.logo !== 'string' && logoPreview) {
+        try {
+          const saved = await uploadCompanyLogo({ logoUrl: logoPreview });
+          payload.logo = saved.logo || logoPreview;
+        } catch (logoError) {
+          console.error('Logo upload failed:', logoError);
+          // Continue without logo if upload fails
+        }
+      }
+      
+      await updateCompanyProfile(payload);
       onClose();
     } catch (error) {
       console.error('Error updating company profile:', error);

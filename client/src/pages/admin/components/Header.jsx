@@ -3,7 +3,7 @@ import { getCurrentUser, logout } from '../../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 
-export default function Header() {
+export default function Header({ title = "Dashboard" }) {
   const user = getCurrentUser();
   const initials = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) : 'JD';
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ export default function Header() {
 
   return (
     <header className="flex items-center justify-between px-8 py-4 bg-white border-b">
-      <div className="text-2xl font-semibold text-gray-800">Dashboard</div>
+      <div className="text-2xl font-semibold text-gray-800">{title}</div>
       <div className="flex items-center gap-4">
         <input
           type="text"

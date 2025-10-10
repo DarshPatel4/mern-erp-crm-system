@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaTimes, FaDownload, FaUpload, FaHistory, FaTrash, FaPlay, FaPause } from 'react-icons/fa';
+const API_URL = 'http://localhost:5000/api';
 
 export default function DataBackupModal({ onClose }) {
   const [activeTab, setActiveTab] = useState('backup');
@@ -13,40 +14,8 @@ export default function DataBackupModal({ onClose }) {
     compression: true
   });
 
-  const [backupHistory, setBackupHistory] = useState([
-    {
-      id: 1,
-      name: 'backup_2024_01_15_020000',
-      date: '2024-01-15 02:00:00',
-      size: '2.5 GB',
-      status: 'completed',
-      type: 'auto'
-    },
-    {
-      id: 2,
-      name: 'backup_2024_01_14_020000',
-      date: '2024-01-14 02:00:00',
-      size: '2.3 GB',
-      status: 'completed',
-      type: 'auto'
-    },
-    {
-      id: 3,
-      name: 'manual_backup_2024_01_13_150000',
-      date: '2024-01-13 15:00:00',
-      size: '2.4 GB',
-      status: 'completed',
-      type: 'manual'
-    },
-    {
-      id: 4,
-      name: 'backup_2024_01_12_020000',
-      date: '2024-01-12 02:00:00',
-      size: '2.2 GB',
-      status: 'failed',
-      type: 'auto'
-    }
-  ]);
+  const [backupHistory, setBackupHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [backupProgress, setBackupProgress] = useState(0);
@@ -55,39 +24,60 @@ export default function DataBackupModal({ onClose }) {
     setBackupSettings(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCreateBackup = () => {
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  };
+
+  const loadBackups = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/settings/backup/list`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      setBackupHistory(data.map(d => ({ id: d.name, name: d.name, date: new Date(d.date).toLocaleString(), size: `${(d.size/1024/1024).toFixed(2)} MB`, status: 'completed', type: 'manual' })));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadBackups(); }, []);
+
+  const handleCreateBackup = async () => {
     setIsBackingUp(true);
     setBackupProgress(0);
-    
-    // Simulate backup process
-    const interval = setInterval(() => {
-      setBackupProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsBackingUp(false);
-          // Add new backup to history
-          const newBackup = {
-            id: Date.now(),
-            name: `manual_backup_${new Date().toISOString().slice(0, 19).replace(/[-:]/g, '_')}`,
-            date: new Date().toISOString().slice(0, 19).replace('T', ' '),
-            size: '2.5 GB',
-            status: 'completed',
-            type: 'manual'
-          };
-          setBackupHistory(prev => [newBackup, ...prev]);
-          return 0;
-        }
-        return prev + 10;
-      });
-    }, 500);
+    try {
+      await fetch(`${API_URL}/settings/backup`, { method: 'POST', headers: getAuthHeaders() });
+      // poll briefly to simulate progress
+      const interval = setInterval(async () => {
+        setBackupProgress(prev => {
+          const next = prev + 25;
+          if (next >= 100) {
+            clearInterval(interval);
+            setIsBackingUp(false);
+            loadBackups();
+            return 0;
+          }
+          return next;
+        });
+      }, 300);
+    } catch (e) {
+      setIsBackingUp(false);
+      alert('Backup failed');
+    }
   };
 
-  const handleRestore = (backupId) => {
-    // Handle restore logic
-    console.log('Restoring backup:', backupId);
+  const handleRestore = async (backupId) => {
+    if (!window.confirm('Restoring will overwrite current data. Proceed?')) return;
+    try {
+      await fetch(`${API_URL}/settings/backup/restore`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ file: backupId, drop: true }) });
+      alert('Restore triggered');
+    } catch (e) {
+      alert('Restore failed');
+    }
   };
 
-  const handleDeleteBackup = (backupId) => {
+  const handleDeleteBackup = async (backupId) => {
+    // Optional: could add delete route; for now just hide
     setBackupHistory(prev => prev.filter(backup => backup.id !== backupId));
   };
 

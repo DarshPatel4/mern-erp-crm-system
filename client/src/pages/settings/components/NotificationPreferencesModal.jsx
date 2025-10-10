@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaTimes, FaBell, FaEnvelope, FaMobile, FaDesktop } from 'react-icons/fa';
+import { fetchNotificationPreferences, updateNotificationPreferences } from '../../../services/settings';
 
 export default function NotificationPreferencesModal({ onClose }) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [notifications, setNotifications] = useState({
     email: {
       enabled: true,
@@ -48,6 +51,58 @@ export default function NotificationPreferencesModal({ onClose }) {
     }
   });
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const prefs = await fetchNotificationPreferences();
+        setNotifications({
+          email: {
+            enabled: prefs?.email?.enabled ?? true,
+            newLeads: prefs?.email?.types?.newLead ?? true,
+            taskUpdates: prefs?.email?.types?.taskAssignment ?? true,
+            invoiceReminders: prefs?.email?.types?.invoiceGenerated ?? true,
+            systemAlerts: prefs?.email?.types?.systemAlerts ?? true,
+            marketingUpdates: false
+          },
+          sms: {
+            enabled: prefs?.sms?.enabled ?? false,
+            urgentAlerts: prefs?.sms?.types?.urgentAlerts ?? true,
+            securityAlerts: prefs?.sms?.types?.otpVerification ?? true,
+            systemMaintenance: prefs?.sms?.types?.leaveApproval ?? false
+          },
+          push: {
+            enabled: prefs?.push?.enabled ?? true,
+            newLeads: prefs?.push?.types?.newLead ?? true,
+            taskUpdates: prefs?.push?.types?.taskAssignment ?? true,
+            invoiceReminders: false,
+            systemAlerts: prefs?.push?.types?.systemAlerts ?? true
+          },
+          inApp: {
+            enabled: prefs?.inApp?.enabled ?? true,
+            newLeads: prefs?.inApp?.types?.allNotifications ?? true,
+            taskUpdates: prefs?.inApp?.types?.mentions ?? true,
+            invoiceReminders: prefs?.inApp?.types?.updates ?? true,
+            systemAlerts: true,
+            teamUpdates: true
+          }
+        });
+        setUserPreferences({
+          quietHours: {
+            enabled: prefs?.email?.quietHours?.enabled ?? false,
+            startTime: prefs?.email?.quietHours?.startTime || '22:00',
+            endTime: prefs?.email?.quietHours?.endTime || '08:00'
+          },
+          frequency: prefs?.email?.frequency || 'immediate',
+          digest: { enabled: false, frequency: 'daily', time: '09:00' }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
   const handleNotificationChange = (channel, type, value) => {
     setNotifications(prev => ({
       ...prev,
@@ -68,10 +123,53 @@ export default function NotificationPreferencesModal({ onClose }) {
     }));
   };
 
-  const handleSave = () => {
-    // Handle save logic
-    console.log('Saving notification preferences:', { notifications, userPreferences });
-    onClose();
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const payload = {
+        email: {
+          enabled: notifications.email.enabled,
+          types: {
+            newLead: notifications.email.newLeads,
+            leaveRequest: true,
+            taskAssignment: notifications.email.taskUpdates,
+            invoiceGenerated: notifications.email.invoiceReminders,
+            systemAlerts: notifications.email.systemAlerts
+          },
+          frequency: userPreferences.frequency,
+          quietHours: userPreferences.quietHours
+        },
+        sms: {
+          enabled: notifications.sms.enabled,
+          types: {
+            urgentAlerts: notifications.sms.urgentAlerts,
+            otpVerification: notifications.sms.securityAlerts,
+            leaveApproval: notifications.sms.systemMaintenance
+          }
+        },
+        push: {
+          enabled: notifications.push.enabled,
+          types: {
+            newLead: notifications.push.newLeads,
+            leaveRequest: true,
+            taskAssignment: notifications.push.taskUpdates,
+            systemAlerts: notifications.push.systemAlerts
+          }
+        },
+        inApp: {
+          enabled: notifications.inApp.enabled,
+          types: {
+            allNotifications: notifications.inApp.newLeads,
+            mentions: notifications.inApp.taskUpdates,
+            updates: notifications.inApp.invoiceReminders
+          }
+        }
+      };
+      await updateNotificationPreferences(payload);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const notificationTypes = {
@@ -117,6 +215,7 @@ export default function NotificationPreferencesModal({ onClose }) {
         </div>
 
         <div className="p-6 space-y-6">
+          {loading && <div className="text-gray-500">Loading preferences...</div>}
           {/* Notification Channels */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
@@ -280,9 +379,10 @@ export default function NotificationPreferencesModal({ onClose }) {
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium"
+            disabled={saving}
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium disabled:opacity-50"
           >
-            Save Preferences
+            {saving ? 'Saving...' : 'Save Preferences'}
           </button>
         </div>
       </div>

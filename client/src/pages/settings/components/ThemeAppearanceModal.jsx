@@ -59,6 +59,22 @@ export default function ThemeAppearanceModal({ onClose }) {
       document.documentElement.style.setProperty('--primary-color', settingsData.primaryColor);
       document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
       
+      // Apply dark/light mode class to body and html
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+        document.body.classList.add('dark');
+        document.body.classList.remove('light');
+      } else {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+        document.body.classList.add('light');
+        document.body.classList.remove('dark');
+      }
+      
+      // Store in localStorage for persistence
+      localStorage.setItem('theme-settings', JSON.stringify(settingsData));
+      
       onClose();
     } catch (error) {
       console.error('Error saving theme settings:', error);
@@ -83,6 +99,15 @@ export default function ThemeAppearanceModal({ onClose }) {
       document.documentElement.setAttribute('data-theme', 'light');
       document.documentElement.style.setProperty('--primary-color', '#6366f1');
       document.documentElement.style.setProperty('--font-size', '14px');
+      
+      // Apply light mode classes
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+      document.body.classList.add('light');
+      document.body.classList.remove('dark');
+      
+      // Clear localStorage
+      localStorage.removeItem('theme-settings');
     } catch (error) {
       console.error('Error resetting theme settings:', error);
       alert('Failed to reset theme settings. Please try again.');

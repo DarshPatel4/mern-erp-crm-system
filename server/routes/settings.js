@@ -5,6 +5,7 @@ const emailSmsConfigController = require('../controllers/emailSmsConfigControlle
 const documentBrandingController = require('../controllers/documentBrandingController');
 const notificationPreferencesController = require('../controllers/notificationPreferencesController');
 const themeSettingsController = require('../controllers/themeSettingsController');
+const backupController = require('../controllers/backupController');
 const { auth } = require('../middleware/auth');
 const { roleCheck } = require('../middleware/roleCheck');
 
@@ -32,5 +33,11 @@ router.put('/notification-preferences', auth, roleCheck(['admin']), notification
 router.get('/theme-settings', auth, roleCheck(['admin']), themeSettingsController.getThemeSettings);
 router.put('/theme-settings', auth, roleCheck(['admin']), themeSettingsController.updateThemeSettings);
 router.post('/theme-settings/reset', auth, roleCheck(['admin']), themeSettingsController.resetThemeSettings);
+
+// Backup & Restore routes
+router.post('/backup', auth, roleCheck(['admin']), backupController.createBackup);
+router.get('/backup/list', auth, roleCheck(['admin']), backupController.listBackups);
+router.get('/backup/download/:file', auth, roleCheck(['admin']), backupController.downloadBackup);
+router.post('/backup/restore', auth, roleCheck(['admin']), backupController.restoreBackup);
 
 module.exports = router; 

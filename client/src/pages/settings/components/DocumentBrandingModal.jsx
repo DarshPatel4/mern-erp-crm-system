@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaTimes, FaUpload, FaEye, FaDownload, FaPalette } from 'react-icons/fa';
+import { fetchDocumentBranding, updateDocumentBranding, uploadDocumentLogo } from '../../../services/settings';
 
 export default function DocumentBrandingModal({ onClose }) {
   const [activeTab, setActiveTab] = useState('logos');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [logos, setLogos] = useState({
     primary: null,
     secondary: null,
@@ -26,20 +29,24 @@ export default function DocumentBrandingModal({ onClose }) {
   const [documentSettings, setDocumentSettings] = useState({
     pageSize: 'A4',
     orientation: 'portrait',
-    margins: 'normal',
+    margins: 20,
     fontFamily: 'Arial',
-    fontSize: '12',
+    fontSize: 12,
     primaryColor: '#3B82F6',
     secondaryColor: '#6B7280'
   });
 
   const [logoPreviews, setLogoPreviews] = useState({});
 
-  const handleLogoUpload = (type, file) => {
+  const handleLogoUpload = async (type, file) => {
     if (file) {
-      setLogos(prev => ({ ...prev, [type]: file }));
       const reader = new FileReader();
-      reader.onload = (e) => setLogoPreviews(prev => ({ ...prev, [type]: e.target.result }));
+      reader.onload = async (e) => {
+        const dataUrl = e.target.result;
+        setLogoPreviews(prev => ({ ...prev, [type]: dataUrl }));
+        setLogos(prev => ({ ...prev, [type]: dataUrl }));
+        // Don't save immediately - save on form submit
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -60,11 +67,88 @@ export default function DocumentBrandingModal({ onClose }) {
     console.log('Preview document with current settings');
   };
 
-  const handleSave = () => {
-    // Handle save logic
-    console.log('Saving branding settings:', { logos, headerFooter, documentSettings });
-    onClose();
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      
+      // Upload logos first if they exist
+      const logoUrls = {};
+      for (const [type, logo] of Object.entries(logos)) {
+        if (logo && logo.startsWith('data:')) {
+          try {
+            const saved = await uploadDocumentLogo({ logoType: type, logoUrl: logo });
+            logoUrls[type] = saved?.logos?.[type] || logo;
+          } catch (error) {
+            console.error(`Failed to upload ${type} logo:`, error);
+            logoUrls[type] = logo; // fallback to original
+          }
+        } else if (logo) {
+          logoUrls[type] = logo;
+        }
+      }
+      
+      await updateDocumentBranding({
+        logos: {
+          primary: logoUrls.primary || '',
+          secondary: logoUrls.secondary || '',
+          favicon: logoUrls.favicon || ''
+        },
+        header: {
+          showLogo: headerFooter.header.logo,
+          showCompanyName: headerFooter.header.companyName,
+          showContactInfo: headerFooter.header.contactInfo
+        },
+        footer: {
+          showLogo: headerFooter.footer.logo,
+          showCompanyName: headerFooter.footer.companyName,
+          showContactInfo: headerFooter.footer.contactInfo,
+          showSocialLinks: headerFooter.footer.socialLinks
+        },
+        documentSettings
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const branding = await fetchDocumentBranding();
+        setLogoPreviews(branding?.logos || {});
+        setLogos(branding?.logos || {});
+        setHeaderFooter({
+          header: {
+            enabled: true,
+            logo: branding?.header?.showLogo ?? true,
+            companyName: branding?.header?.showCompanyName ?? true,
+            contactInfo: branding?.header?.showContactInfo ?? true
+          },
+          footer: {
+            enabled: true,
+            logo: branding?.footer?.showLogo ?? true,
+            companyName: branding?.footer?.showCompanyName ?? true,
+            contactInfo: branding?.footer?.showContactInfo ?? true,
+            socialLinks: branding?.footer?.showSocialLinks ?? false
+          }
+        });
+        setDocumentSettings({
+          pageSize: branding?.documentSettings?.pageSize || 'A4',
+          orientation: branding?.documentSettings?.orientation || 'portrait',
+          margins: branding?.documentSettings?.margins || 20,
+          fontFamily: branding?.documentSettings?.fontFamily || 'Arial',
+          fontSize: branding?.documentSettings?.fontSize || 12,
+          primaryColor: branding?.documentSettings?.primaryColor || '#3B82F6',
+          secondaryColor: branding?.documentSettings?.secondaryColor || '#6B7280'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-white/10 backdrop-blur-md flex items-center justify-center z-50">
@@ -81,6 +165,7 @@ export default function DocumentBrandingModal({ onClose }) {
         </div>
 
         <div className="p-6">
+          {loading && <div className="text-gray-500">Loading branding...</div>}
           {/* Tabs */}
           <div className="flex space-x-1 mb-6 bg-gray-100 rounded-lg p-1">
             <button
@@ -375,9 +460,10 @@ export default function DocumentBrandingModal({ onClose }) {
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium"
+            disabled={saving}
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium disabled:opacity-50"
           >
-            Save Settings
+            {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
       </div>

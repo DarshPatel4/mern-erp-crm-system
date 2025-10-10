@@ -12,6 +12,7 @@ import CreateInvoice from './pages/invoices/CreateInvoice';
 import EditInvoice from './pages/invoices/EditInvoice';
 import InvoiceView from './pages/invoices/InvoiceView';
 import TaskManagement from './pages/tasks/TaskManagement';
+import HelpSupport from './pages/help/HelpSupport';
 import PrivateRoute from './PrivateRoute';
 import './App.css';
 
@@ -34,6 +35,9 @@ function App() {
             <Route path="invoices/:id" element={<InvoiceView />} />
             <Route path="invoices/:id/edit" element={<EditInvoice />} />
           </Route>
+        </Route>
+        <Route element={<PrivateRoute allowedRoles={['admin', 'hr', 'employee', 'sales']} />}>
+          <Route path="/help" element={<HelpSupport />} />
         </Route>
         <Route element={<PrivateRoute allowedRoles={['admin', 'hr', 'employee']} />}>
           <Route path="/tasks" element={<TaskManagement />} />

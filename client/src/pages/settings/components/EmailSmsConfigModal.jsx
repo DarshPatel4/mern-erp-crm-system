@@ -1,40 +1,67 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaTimes, FaEnvelope, FaSms, FaKey, FaCog } from 'react-icons/fa';
+import { fetchEmailSmsConfig, updateEmailSmsConfig, testEmail, testSms } from '../../../services/settings';
 
 export default function EmailSmsConfigModal({ onClose }) {
   const [activeTab, setActiveTab] = useState('email');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [emailConfig, setEmailConfig] = useState({
-    smtpHost: 'smtp.gmail.com',
-    smtpPort: '587',
-    username: 'erpcrm@gmail.com',
+    smtpHost: '',
+    smtpPort: 587,
+    username: '',
     password: '',
-    fromName: 'NexusERP',
-    fromEmail: 'darshpatel2531@gmail.com',
+    fromName: '',
+    fromEmail: '',
     encryption: 'tls'
   });
 
   const [smsConfig, setSmsConfig] = useState({
-    provider: 'twilio',
+    provider: '',
     accountSid: '',
     authToken: '',
-    fromNumber: '+919979099218',
+    fromNumber: '',
     apiKey: ''
   });
 
   const [templates, setTemplates] = useState({
-    welcome: {
-      subject: 'Welcome to NexusERP',
-      body: 'Dear {{name}},\n\nWelcome to NexusERP! We\'re excited to have you on board.\n\nBest regards,\nThe NexusERP Team'
-    },
-    passwordReset: {
-      subject: 'Password Reset Request',
-      body: 'Dear {{name}},\n\nYou requested a password reset. Click the link below to reset your password:\n\n{{resetLink}}\n\nIf you didn\'t request this, please ignore this email.\n\nBest regards,\nThe NexusERP Team'
-    },
-    invoice: {
-      subject: 'Invoice #{{invoiceNumber}}',
-      body: 'Dear {{customerName}},\n\nPlease find attached invoice #{{invoiceNumber}} for {{amount}}.\n\nDue date: {{dueDate}}\n\nThank you for your business.\n\nBest regards,\n{{companyName}}'
-    }
+    welcome: { subject: '', body: '' },
+    passwordReset: { subject: '', body: '' },
+    invoice: { subject: '', body: '' }
   });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const cfg = await fetchEmailSmsConfig();
+        setEmailConfig({
+          smtpHost: cfg?.email?.smtpHost || '',
+          smtpPort: cfg?.email?.smtpPort || 587,
+          username: cfg?.email?.smtpUser || '',
+          password: cfg?.email?.smtpPassword || '',
+          fromName: cfg?.email?.fromName || '',
+          fromEmail: cfg?.email?.fromEmail || '',
+          encryption: 'tls'
+        });
+        setSmsConfig({
+          provider: cfg?.sms?.provider || '',
+          accountSid: cfg?.sms?.accountSid || '',
+          authToken: cfg?.sms?.apiSecret || '',
+          fromNumber: cfg?.sms?.fromNumber || '',
+          apiKey: cfg?.sms?.apiKey || ''
+        });
+        setTemplates({
+          welcome: { subject: '', body: cfg?.email?.templates?.welcome || '' },
+          passwordReset: { subject: '', body: cfg?.email?.templates?.passwordReset || '' },
+          invoice: { subject: '', body: cfg?.email?.templates?.invoice || '' }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const handleEmailConfigChange = (field, value) => {
     setEmailConfig(prev => ({ ...prev, [field]: value }));
@@ -51,20 +78,53 @@ export default function EmailSmsConfigModal({ onClose }) {
     }));
   };
 
-  const handleTestEmail = () => {
-    // Handle test email logic
-    console.log('Testing email configuration:', emailConfig);
+  const handleTestEmail = async () => {
+    try {
+      await testEmail({ toEmail: emailConfig.fromEmail || 'test@example.com' });
+      alert('Test email triggered');
+    } catch (e) {
+      alert('Failed to trigger test email');
+    }
   };
 
-  const handleTestSms = () => {
-    // Handle test SMS logic
-    console.log('Testing SMS configuration:', smsConfig);
+  const handleTestSms = async () => {
+    try {
+      await testSms({ toNumber: smsConfig.fromNumber });
+      alert('Test SMS triggered');
+    } catch (e) {
+      alert('Failed to trigger test SMS');
+    }
   };
 
-  const handleSave = () => {
-    // Handle save logic
-    console.log('Saving configurations:', { emailConfig, smsConfig, templates });
-    onClose();
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const payload = {
+        email: {
+          smtpHost: emailConfig.smtpHost,
+          smtpPort: Number(emailConfig.smtpPort),
+          smtpUser: emailConfig.username,
+          smtpPassword: emailConfig.password,
+          fromEmail: emailConfig.fromEmail,
+          fromName: emailConfig.fromName,
+          templates: {
+            welcome: templates.welcome.body,
+            passwordReset: templates.passwordReset.body,
+            invoice: templates.invoice.body
+          }
+        },
+        sms: {
+          provider: smsConfig.provider,
+          apiKey: smsConfig.apiKey,
+          apiSecret: smsConfig.authToken,
+          fromNumber: smsConfig.fromNumber
+        }
+      };
+      await updateEmailSmsConfig(payload);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -82,6 +142,9 @@ export default function EmailSmsConfigModal({ onClose }) {
         </div>
 
         <div className="p-6">
+          {loading && (
+            <div className="text-gray-500">Loading settings...</div>
+          )}
           {/* Tabs */}
           <div className="flex space-x-1 mb-6 bg-gray-100 rounded-lg p-1">
             <button

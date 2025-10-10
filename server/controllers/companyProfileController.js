@@ -1,4 +1,6 @@
 
+const CompanyProfile = require('../models/CompanyProfile');
+
 // Get company profile
 exports.getCompanyProfile = async (req, res) => {
   try {

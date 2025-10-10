@@ -1,59 +1,103 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaTimes, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+const API_URL = 'http://localhost:5000/api';
 
 export default function DepartmentManagementModal({ onClose }) {
-  const [departments, setDepartments] = useState([
-    { id: 1, name: 'Engineering', description: 'Software development team', employeeCount: 15, color: 'blue' },
-    { id: 2, name: 'Marketing', description: 'Digital marketing and branding', employeeCount: 8, color: 'green' },
-    { id: 3, name: 'Sales', description: 'Sales and business development', employeeCount: 12, color: 'orange' },
-    { id: 4, name: 'HR', description: 'Human resources and recruitment', employeeCount: 5, color: 'purple' }
-  ]);
+  const [departments, setDepartments] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingDept, setEditingDept] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
-    color: 'blue'
+    color: '#3B82F6'
   });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const colors = [
-    { name: 'blue', value: '#3B82F6', bg: 'bg-blue-500' },
-    { name: 'green', value: '#10B981', bg: 'bg-green-500' },
-    { name: 'orange', value: '#F97316', bg: 'bg-orange-500' },
-    { name: 'red', value: '#EF4444', bg: 'bg-red-500' },
-    { name: 'purple', value: '#8B5CF6', bg: 'bg-purple-500' },
-    { name: 'pink', value: '#EC4899', bg: 'bg-pink-500' },
-    { name: 'yellow', value: '#EAB308', bg: 'bg-yellow-500' },
-    { name: 'teal', value: '#14B8A6', bg: 'bg-teal-500' }
+    { name: 'Blue', value: '#3B82F6', bg: 'bg-blue-500' },
+    { name: 'Green', value: '#10B981', bg: 'bg-green-500' },
+    { name: 'Orange', value: '#F97316', bg: 'bg-orange-500' },
+    { name: 'Red', value: '#EF4444', bg: 'bg-red-500' },
+    { name: 'Purple', value: '#8B5CF6', bg: 'bg-purple-500' },
+    { name: 'Pink', value: '#EC4899', bg: 'bg-pink-500' },
+    { name: 'Yellow', value: '#EAB308', bg: 'bg-yellow-500' },
+    { name: 'Teal', value: '#14B8A6', bg: 'bg-teal-500' },
+    { name: 'Gray', value: '#6B7280', bg: 'bg-gray-500' }
   ];
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingDept) {
-      setDepartments(prev => prev.map(dept => 
-        dept.id === editingDept.id ? { ...dept, ...formData } : dept
-      ));
-      setEditingDept(null);
-    } else {
-      const newDept = {
-        id: Date.now(),
-        ...formData,
-        employeeCount: 0
-      };
-      setDepartments(prev => [...prev, newDept]);
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/departments`, { headers: getAuthHeaders() });
+      const data = await res.json();
+      setDepartments(data);
+    } catch (e) {
+      setError('Failed to load departments');
+    } finally {
+      setLoading(false);
     }
-    setFormData({ name: '', description: '', color: 'blue' });
-    setShowAddForm(false);
+  };
+
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      if (editingDept) {
+        await fetch(`${API_URL}/departments/${editingDept._id}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ name: formData.name, color: formData.color })
+        });
+        setEditingDept(null);
+      } else {
+        await fetch(`${API_URL}/departments`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ name: formData.name, color: formData.color })
+        });
+      }
+      setFormData({ name: '', color: '#3B82F6' });
+      setShowAddForm(false);
+      await fetchDepartments();
+    } catch (err) {
+      setError('Failed to save department');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEdit = (dept) => {
     setEditingDept(dept);
-    setFormData({ name: dept.name, description: dept.description, color: dept.color });
+    setFormData({ name: dept.name, color: dept.color || '#3B82F6' });
     setShowAddForm(true);
   };
 
-  const handleDelete = (id) => {
-    setDepartments(prev => prev.filter(dept => dept.id !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this department? Employees will be reassigned to Unassigned.')) return;
+    try {
+      await fetch(`${API_URL}/departments/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ reassignTo: 'Unassigned' })
+      });
+      await fetchDepartments();
+    } catch (e) {
+      setError('Failed to delete department');
+    }
   };
 
   return (
@@ -84,6 +128,9 @@ export default function DepartmentManagementModal({ onClose }) {
         </div>
 
         <div className="p-6">
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-800 p-3 rounded">{error}</div>
+          )}
           {/* Add/Edit Form */}
           {showAddForm && (
             <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -111,42 +158,33 @@ export default function DepartmentManagementModal({ onClose }) {
                     <div className="flex gap-2">
                       {colors.map((color) => (
                         <button
-                          key={color.name}
+                          key={color.value}
                           type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, color: color.name }))}
+                          onClick={() => setFormData(prev => ({ ...prev, color: color.value }))}
                           className={`w-8 h-8 rounded-full ${color.bg} border-2 ${
-                            formData.color === color.name ? 'border-gray-900 scale-110' : 'border-white'
+                            formData.color === color.value ? 'border-gray-900 scale-110' : 'border-white'
                           }`}
+                          title={color.name}
                         ></button>
                       ))}
                     </div>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
+                
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium"
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium disabled:opacity-50"
                   >
-                    {editingDept ? 'Update Department' : 'Add Department'}
+                    {saving ? 'Saving...' : (editingDept ? 'Update Department' : 'Add Department')}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       setShowAddForm(false);
                       setEditingDept(null);
-                      setFormData({ name: '', description: '', color: 'blue' });
+                      setFormData({ name: '', color: '#3B82F6' });
                     }}
                     className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
                   >
@@ -159,13 +197,15 @@ export default function DepartmentManagementModal({ onClose }) {
 
           {/* Departments List */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {departments.map((dept) => {
-              const color = colors.find(c => c.name === dept.color);
+            {loading ? (
+              <div className="text-gray-500">Loading departments...</div>
+            ) : (
+            departments.map((dept) => {
               return (
-                <div key={dept.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div key={dept._id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full ${color?.bg}`}></div>
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: dept.color }}></div>
                       <h3 className="font-semibold text-gray-900">{dept.name}</h3>
                     </div>
                     <div className="flex gap-2">
@@ -176,25 +216,23 @@ export default function DepartmentManagementModal({ onClose }) {
                         <FaEdit size={14} />
                       </button>
                       <button
-                        onClick={() => handleDelete(dept.id)}
+                        onClick={() => handleDelete(dept._id)}
                         className="text-red-500 hover:text-red-700"
                       >
                         <FaTrash size={14} />
                       </button>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">{dept.description}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500">
-                      {dept.employeeCount} employee{dept.employeeCount !== 1 ? 's' : ''}
+                      {(dept.employeeCount || 0)} employee{(dept.employeeCount || 0) !== 1 ? 's' : ''}
                     </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${color?.bg} text-white`}>
-                      Active
-                    </span>
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">Active</span>
                   </div>
                 </div>
               );
-            })}
+            }))
+            }
           </div>
         </div>
       </div>
