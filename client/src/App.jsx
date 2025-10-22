@@ -13,6 +13,7 @@ import EditInvoice from './pages/invoices/EditInvoice';
 import InvoiceView from './pages/invoices/InvoiceView';
 import TaskManagement from './pages/tasks/TaskManagement';
 import HelpSupport from './pages/help/HelpSupport';
+import AnalyticsDashboard from './pages/analytics/AnalyticsDashboard';
 import PrivateRoute from './PrivateRoute';
 import './App.css';
 
@@ -38,6 +39,9 @@ function App() {
         </Route>
         <Route element={<PrivateRoute allowedRoles={['admin', 'hr', 'employee', 'sales']} />}>
           <Route path="/help" element={<HelpSupport />} />
+        </Route>
+        <Route element={<PrivateRoute allowedRoles={['admin', 'hr', 'sales']} />}>
+          <Route path="/analytics" element={<AnalyticsDashboard />} />
         </Route>
         <Route element={<PrivateRoute allowedRoles={['admin', 'hr', 'employee']} />}>
           <Route path="/tasks" element={<TaskManagement />} />

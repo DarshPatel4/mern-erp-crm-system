@@ -31,6 +31,7 @@ const employeeLeaveRoutes = require('./routes/employeeLeave');
 const employeePayrollRoutes = require('./routes/employeePayroll');
 const employeeProfileRoutes = require('./routes/employeeProfile');
 const taskRoutes = require('./routes/task');
+const analyticsRoutes = require('./routes/analytics');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -53,13 +54,19 @@ app.use('/api/employee-leave', employeeLeaveRoutes);
 app.use('/api/employee-payroll', employeePayrollRoutes);
 app.use('/api/employee-profile', employeeProfileRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('MongoDB connected'))
+.then(() => {
+  console.log('MongoDB connected');
+  // Initialize analytics data asynchronously without blocking server start
+  const initAnalyticsData = require('./initAnalyticsData');
+  initAnalyticsData().catch(err => console.error('Analytics initialization error:', err));
+})
 .catch((err) => console.error('MongoDB connection error:', err));
 
 // Default route for testing

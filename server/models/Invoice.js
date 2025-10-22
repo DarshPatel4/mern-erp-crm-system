@@ -26,7 +26,7 @@ const invoiceSchema = new mongoose.Schema(
     dueDate: { type: Date, required: true },
     status: { type: String, enum: ['Paid', 'Unpaid', 'Overdue', 'Draft'], default: 'Unpaid' },
     notes: { type: String },
-    currency: { type: String, enum: ['USD', 'INR', 'EUR', 'GBP'], default: 'USD' },
+    currency: { type: String, enum: ['USD', 'INR', 'EUR', 'GBP'], default: 'INR' },
   },
   { timestamps: true }
 );
