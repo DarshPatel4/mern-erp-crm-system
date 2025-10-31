@@ -1,12 +1,12 @@
 import { FaHome, FaClock, FaClipboardList, FaCalendarAlt, FaDollarSign, FaUser, FaSignOutAlt } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-export default function Sidebar({ user }) {
+export default function Sidebar({ user, onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
 
   const navItems = [
-    { name: 'Dashboard', icon: FaHome, path: '/employee', active: true },
+    { name: 'Dashboard', icon: FaHome, path: '/employee' },
     { name: 'Attendance', icon: FaClock, path: '/employee/attendance' },
     { name: 'Tasks', icon: FaClipboardList, path: '/employee/tasks' },
     { name: 'Leave Requests', icon: FaCalendarAlt, path: '/employee/leave' },
@@ -15,6 +15,11 @@ export default function Sidebar({ user }) {
   ];
 
   const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+      return;
+    }
+
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login');
@@ -40,7 +45,11 @@ export default function Sidebar({ user }) {
         <ul className="space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            // For Dashboard (index route), check if pathname is exactly '/employee'
+            // For other routes, check exact match
+            const isActive = item.path === '/employee' 
+              ? location.pathname === '/employee' 
+              : location.pathname === item.path;
             
             return (
               <li key={item.name}>

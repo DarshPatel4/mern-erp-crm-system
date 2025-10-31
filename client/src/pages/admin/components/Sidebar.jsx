@@ -9,7 +9,6 @@ const navItems = [
   { label: 'Tasks', icon: <FaTasks />, path: '/tasks' },
   { label: 'Invoices', icon: <FaFileInvoice />, path: '/admin/invoices' },
   { label: 'Analytics', icon: <FaChartBar />, section: 'REPORTS', path: '/analytics' },
-  { label: 'Financial', icon: <FaChartBar />, section: 'REPORTS', path: '/financial' },
   { label: 'Settings', icon: <FaCog />, section: 'SETTINGS', path: '/admin/settings' },
   { label: 'Help', icon: <FaQuestionCircle />, section: 'SETTINGS', path: '/help' },
 ];

@@ -21,4 +21,30 @@ function roleCheck(...roles) {
   };
 }
 
-module.exports = { auth, roleCheck }; 
+function ensureEmployeeAccess(paramName = 'employeeId') {
+  return (req, res, next) => {
+    const { role, userId, employeeId: tokenEmployeeId } = req.user || {};
+
+    if (role !== 'employee') {
+      return next();
+    }
+
+    const targetId = req.params[paramName] || req.body[paramName] || req.query[paramName];
+
+    if (!targetId) {
+      return res.status(400).json({ message: 'Employee identifier is required' });
+    }
+
+    if (tokenEmployeeId && tokenEmployeeId !== targetId) {
+      return res.status(403).json({ message: 'Access denied: cannot access other employee records' });
+    }
+
+    if (!tokenEmployeeId) {
+      return res.status(403).json({ message: 'Access denied: employee profile not linked' });
+    }
+
+    next();
+  };
+}
+
+module.exports = { auth, roleCheck, ensureEmployeeAccess };

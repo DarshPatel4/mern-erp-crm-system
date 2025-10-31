@@ -1,47 +1,48 @@
 import { FaClock, FaCheckCircle, FaExclamationTriangle, FaEye } from 'react-icons/fa';
 
-export default function RecentTasks() {
-  const tasks = [
-    {
-      id: 1,
-      title: 'Complete user authentication module',
-      due: 'Today, 5:00 PM',
-      status: 'Completed',
-      priority: 'normal',
-      icon: FaCheckCircle,
-      iconColor: 'text-blue-600'
-    },
-    {
-      id: 2,
-      title: 'Review API documentation',
-      due: 'Tomorrow, 2:00 PM',
-      status: 'In Progress',
-      priority: 'normal',
-      icon: FaClock,
-      iconColor: 'text-yellow-600'
-    },
-    {
-      id: 3,
-      title: 'Fix database connection issues',
-      due: 'Friday, 10:00 AM',
-      status: 'Urgent',
-      priority: 'high',
-      icon: FaExclamationTriangle,
-      iconColor: 'text-red-600'
-    }
-  ];
+const statusIconMap = {
+  completed: FaCheckCircle,
+  'in-progress': FaClock,
+  pending: FaClock,
+  urgent: FaExclamationTriangle
+};
+
+const statusLabels = {
+  completed: 'Completed',
+  'in-progress': 'In Progress',
+  pending: 'Pending',
+  urgent: 'Urgent'
+};
+
+const statusBadgeMap = {
+  completed: 'bg-green-100 text-green-800',
+  'in-progress': 'bg-yellow-100 text-yellow-800',
+  pending: 'bg-gray-100 text-gray-800',
+  urgent: 'bg-red-100 text-red-800'
+};
+
+const iconColorMap = {
+  completed: 'text-blue-600',
+  'in-progress': 'text-yellow-600',
+  pending: 'text-gray-500',
+  urgent: 'text-red-600'
+};
+
+export default function RecentTasks({ tasks = [], onView, onComplete }) {
+  const displayTasks = tasks.slice(0, 4);
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'Completed':
-        return 'bg-green-100 text-green-800';
-      case 'In Progress':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Urgent':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+    return statusBadgeMap[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const formatDueDate = (value) => {
+    if (!value) return 'No due date';
+    const date = typeof value === 'string' ? new Date(value) : value;
+    if (Number.isNaN(date?.getTime())) return value;
+    return `Due: ${date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    })}`;
   };
 
   return (
@@ -54,12 +55,13 @@ export default function RecentTasks() {
       </div>
       
       <div className="space-y-4">
-        {tasks.map((task) => {
-          const Icon = task.icon;
+        {displayTasks.map((task) => {
+          const Icon = statusIconMap[task.status] || FaClock;
+          const iconColor = iconColorMap[task.status] || 'text-gray-500';
           
           return (
-            <div key={task.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-              <div className={`w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center ${task.iconColor}`}>
+            <div key={task._id || task.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <div className={`w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center ${iconColor}`}>
                 <Icon size={16} />
               </div>
               
@@ -68,22 +70,34 @@ export default function RecentTasks() {
                   {task.title}
                 </div>
                 <div className="text-xs text-gray-500">
-                  Due: {task.due}
+                  {formatDueDate(task.dueDate || task.due)}
                 </div>
               </div>
               
               <div className="flex items-center space-x-2">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(task.status)}`}>
-                  {task.status}
+                  {statusLabels[task.status] || task.status}
                 </span>
                 
-                <button className="text-gray-400 hover:text-gray-600 p-1">
+                <button className="text-gray-400 hover:text-gray-600 p-1" onClick={() => onView?.(task)}>
                   <FaEye size={12} />
                 </button>
+                {task.status !== 'completed' && (
+                  <button
+                    className="text-gray-400 hover:text-gray-600 p-1 text-xs"
+                    onClick={() => onComplete?.(task)}
+                  >
+                    ✓
+                  </button>
+                )}
               </div>
             </div>
           );
         })}
+
+        {displayTasks.length === 0 && (
+          <div className="text-sm text-gray-500 text-center py-6">No tasks assigned yet.</div>
+        )}
       </div>
     </div>
   );

@@ -1,38 +1,42 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, Outlet } from 'react-router-dom';
 import { logout, getCurrentUser } from '../../services/api';
+import { getNotifications, markNotificationRead, getEmployeeProfile } from '../../services/employeePortal';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import WelcomeBanner from './components/WelcomeBanner';
-import AttendanceCard from './components/AttendanceCard';
-import OverviewCards from './components/OverviewCards';
-import RecentTasks from './components/RecentTasks';
-import NotificationsPanel from './components/NotificationsPanel';
-import AttendanceCalendar from './components/AttendanceCalendar';
-import QuickActions from './components/QuickActions';
-import LeaveModal from './components/LeaveModal';
-import ProfileModal from './components/ProfileModal';
-import PayrollModal from './components/PayrollModal';
+
+// Toast Component
+function Toast({ message, type, onClose }) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const bgColor = {
+    success: 'bg-green-500',
+    error: 'bg-red-500',
+    warning: 'bg-yellow-500',
+    info: 'bg-blue-500'
+  }[type] || 'bg-gray-500';
+
+  return (
+    <div className={`${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center justify-between min-w-[300px] max-w-md`}>
+      <span>{message}</span>
+      <button onClick={onClose} className="ml-4 text-white hover:text-gray-200">
+        ×
+      </button>
+    </div>
+  );
+}
 
 export default function EmployeeDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [activeModal, setActiveModal] = useState(null);
-  const [attendanceData, setAttendanceData] = useState({
-    isCheckedIn: false,
-    checkInTime: null,
-    checkOutTime: null,
-    workingHours: '0h 0m',
-    lastCheckIn: null,
-    status: 'Not Started'
-  });
-  const [dashboardData, setDashboardData] = useState({
-    attendanceRate: 95.5,
-    tasksCompleted: { completed: 8, total: 12 },
-    performance: 4.8,
-    leaveBalance: 12,
-    thisMonth: { days: 22, status: 'Present' }
-  });
+  const [notifications, setNotifications] = useState([]);
+  const [toasts, setToasts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -41,167 +45,164 @@ export default function EmployeeDashboard() {
       return;
     }
     setUser(currentUser);
-    loadDashboardData();
+    setIsLoading(false); // Set loading to false immediately so page can render
+    
+    // Load data asynchronously (non-blocking)
+    loadNotifications();
+    loadUserProfile();
   }, [navigate]);
 
-  const loadDashboardData = async () => {
+  const loadUserProfile = async () => {
     try {
-      // TODO: Replace with actual API calls
-      // const response = await fetch('/api/employee/dashboard', {
-      //   headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      // });
-      // const data = await response.json();
-      // setDashboardData(data);
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    }
-  };
-
-  const handleCheckIn = async () => {
-    try {
-      const now = new Date();
-      setAttendanceData(prev => ({
-        ...prev,
-        isCheckedIn: true,
-        checkInTime: now,
-        lastCheckIn: now.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: true 
-        }),
-        status: 'Working'
-      }));
-      // TODO: API call to record check-in
-    } catch (error) {
-      console.error('Error checking in:', error);
-    }
-  };
-
-  const handleCheckOut = async () => {
-    try {
-      const now = new Date();
-      const checkIn = new Date(attendanceData.checkInTime);
-      const hours = Math.floor((now - checkIn) / (1000 * 60 * 60));
-      const minutes = Math.floor(((now - checkIn) % (1000 * 60 * 60)) / (1000 * 60));
+      const currentUser = getCurrentUser();
+      if (!currentUser?._id && !currentUser?.id) {
+        return;
+      }
       
-      setAttendanceData(prev => ({
-        ...prev,
-        isCheckedIn: false,
-        checkOutTime: now,
-        workingHours: `${hours}h ${minutes}m`,
-        status: 'Completed'
-      }));
-      // TODO: API call to record check-out
+      const employeeId = currentUser._id || currentUser.id;
+      const profile = await getEmployeeProfile(employeeId);
+      // Merge profile data but keep original user data as fallback
+      setUser(prev => {
+        if (!prev) return prev; // Don't set if prev is null
+        return { ...prev, ...profile };
+      });
     } catch (error) {
-      console.error('Error checking out:', error);
+      // Silently fail - use existing user data from localStorage
+      // Only log if it's not a 404 (employee not found is expected for new employees)
+      if (error.message && !error.message.includes('not found')) {
+        console.error('Error loading user profile:', error);
+      }
+      // Don't update user state if API call fails
     }
   };
+
+  const loadNotifications = useCallback(async () => {
+    try {
+      const currentUser = getCurrentUser();
+      if (!currentUser?._id && !currentUser?.id) return;
+      
+      const employeeId = currentUser._id || currentUser.id;
+      const data = await getNotifications(employeeId);
+      setNotifications(data || []);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user?._id || user?.id) {
+      loadNotifications();
+      // Refresh notifications every 30 seconds
+      const interval = setInterval(loadNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user, loadNotifications]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const openModal = (modalType) => {
-    setActiveModal(modalType);
+  const showToast = (type, message) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, type, message }]);
   };
 
-  const closeModal = () => {
-    setActiveModal(null);
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
-  if (!user) {
-    return null;
+  const markNotification = async (notification) => {
+    try {
+      const currentUser = getCurrentUser();
+      if (!currentUser?._id && !currentUser?.id) return;
+      
+      const employeeId = currentUser._id || currentUser.id;
+      const notificationId = notification._id || notification.id;
+      await markNotificationRead(employeeId, notificationId);
+      await loadNotifications();
+    } catch (error) {
+      console.error('Error marking notification:', error);
+    }
+  };
+
+  const markAllNotifications = async () => {
+    try {
+      const currentUser = getCurrentUser();
+      if (!currentUser?._id && !currentUser?.id) return;
+      
+      const employeeId = currentUser._id || currentUser.id;
+      const unreadNotifications = notifications.filter(n => !n.isRead);
+      
+      await Promise.all(
+        unreadNotifications.map(notif => {
+          const notificationId = notif._id || notif.id;
+          return markNotificationRead(employeeId, notificationId);
+        })
+      );
+      
+      await loadNotifications();
+    } catch (error) {
+      console.error('Error marking all notifications:', error);
+    }
+  };
+
+  const refreshProfile = async () => {
+    await loadUserProfile();
+  };
+
+  if (!user || isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
   }
+
+  const employeeId = user._id || user.id;
+  const outletContext = {
+    user,
+    employeeId: employeeId || null, // Ensure employeeId is always defined (even if null)
+    notifications,
+    markNotification,
+    markAllNotifications,
+    showToast,
+    refreshProfile
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <Sidebar user={user} />
+      <Sidebar user={user} onLogout={handleLogout} />
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <Header user={user} onLogout={handleLogout} />
+        <Header 
+          user={user} 
+          notifications={notifications}
+          onLogout={handleLogout}
+          onMarkAllNotifications={markAllNotifications}
+          onMarkNotification={markNotification}
+        />
         
-        {/* Main Dashboard Content */}
+        {/* Main Content Area with Outlet */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          {/* Welcome Banner */}
-          <WelcomeBanner user={user} />
-          
-          {/* Top Row - Attendance and Summary Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            {/* Attendance Card - Takes 2 columns on large screens */}
-            <div className="lg:col-span-2">
-              <AttendanceCard 
-                attendanceData={attendanceData}
-                onCheckIn={handleCheckIn}
-                onCheckOut={handleCheckOut}
-              />
-            </div>
-            
-            {/* Right Side Summary Cards */}
-            <div className="space-y-4">
-              <div className="bg-white rounded-2xl p-4 shadow">
-                <div className="text-sm text-gray-600 mb-1">This Month</div>
-                <div className="text-2xl font-bold text-gray-900">{dashboardData.thisMonth.days} Days</div>
-                <div className="flex items-center text-sm text-green-600">
-                  <span className="mr-1">✓</span>
-                  {dashboardData.thisMonth.status}
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-2xl p-4 shadow">
-                <div className="text-sm text-gray-600 mb-1">Leave Balance</div>
-                <div className="text-2xl font-bold text-gray-900">{dashboardData.leaveBalance} Days</div>
-                <div className="flex items-center text-sm text-blue-600">
-                  <span className="mr-1">📅</span>
-                  Available
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Overview Cards Row */}
-          <OverviewCards dashboardData={dashboardData} />
-          
-          {/* Bottom Row - Tasks, Calendar, Notifications, Quick Actions */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-            {/* Recent Tasks */}
-            <div className="lg:col-span-1">
-              <RecentTasks />
-            </div>
-            
-            {/* Attendance Calendar */}
-            <div className="lg:col-span-1">
-              <AttendanceCalendar />
-            </div>
-            
-            {/* Notifications */}
-            <div className="lg:col-span-1">
-              <NotificationsPanel />
-            </div>
-            
-            {/* Quick Actions */}
-            <div className="lg:col-span-1">
-              <QuickActions onAction={openModal} />
-            </div>
-          </div>
+          <Outlet context={outletContext} />
         </main>
       </div>
       
-      {/* Modals */}
-      {activeModal === 'leave' && (
-        <LeaveModal onClose={closeModal} />
-      )}
-      
-      {activeModal === 'profile' && (
-        <ProfileModal user={user} onClose={closeModal} />
-      )}
-      
-      {activeModal === 'payroll' && (
-        <PayrollModal onClose={closeModal} />
-      )}
+      {/* Toast Notifications */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2">
+        {toasts.map(toast => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 } 

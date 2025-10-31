@@ -1,22 +1,52 @@
-import { FaPlay, FaStop, FaClock, FaCheckCircle } from 'react-icons/fa';
+import { FaPlay, FaStop, FaClock, FaCheckCircle, FaPause } from 'react-icons/fa';
 
-export default function AttendanceCard({ attendanceData, onCheckIn, onCheckOut }) {
+export default function AttendanceCard({
+  attendanceData,
+  onCheckIn,
+  onCheckOut,
+  onStartBreak,
+  onEndBreak,
+  loadingAction
+}) {
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Working': return 'text-green-600';
-      case 'Completed': return 'text-blue-600';
-      case 'Not Started': return 'text-gray-600';
-      default: return 'text-gray-600';
+      case 'present':
+      case 'working':
+        return 'text-green-600';
+      case 'completed':
+      case 'checked-out':
+        return 'text-blue-600';
+      case 'absent':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Working': return <FaCheckCircle className="text-green-600" />;
-      case 'Completed': return <FaCheckCircle className="text-blue-600" />;
-      case 'Not Started': return <FaClock className="text-gray-600" />;
-      default: return <FaClock className="text-gray-600" />;
+      case 'present':
+      case 'working':
+        return <FaCheckCircle className="text-green-600" />;
+      case 'completed':
+      case 'checked-out':
+        return <FaCheckCircle className="text-blue-600" />;
+      case 'absent':
+        return <FaClock className="text-red-600" />;
+      default:
+        return <FaClock className="text-gray-600" />;
     }
+  };
+
+  const formatTime = (value) => {
+    if (!value) return '--';
+    const date = typeof value === 'string' ? new Date(value) : value;
+    if (Number.isNaN(date?.getTime())) return '--';
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   return (
@@ -38,9 +68,9 @@ export default function AttendanceCard({ attendanceData, onCheckIn, onCheckOut }
         <div className="text-center">
           <button
             onClick={onCheckIn}
-            disabled={attendanceData.isCheckedIn}
+            disabled={attendanceData.isCheckedIn || loadingAction}
             className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
-              attendanceData.isCheckedIn
+              attendanceData.isCheckedIn || loadingAction
                 ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                 : 'bg-green-600 text-white hover:bg-green-700 hover:shadow-lg'
             }`}
@@ -61,9 +91,9 @@ export default function AttendanceCard({ attendanceData, onCheckIn, onCheckOut }
         <div className="text-center">
           <button
             onClick={onCheckOut}
-            disabled={!attendanceData.isCheckedIn}
+            disabled={!attendanceData.isCheckedIn || loadingAction}
             className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
-              !attendanceData.isCheckedIn
+              !attendanceData.isCheckedIn || loadingAction
                 ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                 : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-lg'
             }`}
@@ -74,27 +104,28 @@ export default function AttendanceCard({ attendanceData, onCheckIn, onCheckOut }
             </div>
           </button>
           <p className="text-xs text-gray-600 mt-2">
-            Working hours: {attendanceData.workingHours}
+            Working hours: {attendanceData.workingHours || '--'}
           </p>
         </div>
 
         {/* Start Break Button */}
         <div className="text-center">
           <button
-            disabled={!attendanceData.isCheckedIn}
+            onClick={attendanceData.onBreak ? onEndBreak : onStartBreak}
+            disabled={!attendanceData.isCheckedIn || loadingAction}
             className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
-              !attendanceData.isCheckedIn
+              !attendanceData.isCheckedIn || loadingAction
                 ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                 : 'bg-yellow-500 text-white hover:bg-yellow-600 hover:shadow-lg'
             }`}
           >
             <div className="flex items-center justify-center space-x-2">
-              <FaClock size={16} />
-              <span>Start Break</span>
+              {attendanceData.onBreak ? <FaPause size={16} /> : <FaClock size={16} />}
+              <span>{attendanceData.onBreak ? 'End Break' : 'Start Break'}</span>
             </div>
           </button>
           <p className="text-xs text-gray-600 mt-2">
-            Break time available
+            {attendanceData.breakStatus || 'Break time available'}
           </p>
         </div>
       </div>
@@ -105,8 +136,23 @@ export default function AttendanceCard({ attendanceData, onCheckIn, onCheckOut }
         <div className="flex items-center space-x-2">
           {getStatusIcon(attendanceData.status)}
           <span className={`font-medium ${getStatusColor(attendanceData.status)}`}>
-            {attendanceData.status}
+            {attendanceData.statusLabel || attendanceData.status || 'Not Started'}
           </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 text-sm text-gray-600">
+        <div className="bg-gray-50 rounded-lg p-3">
+          <div className="font-medium text-gray-800">Check-in</div>
+          <div>{formatTime(attendanceData.checkInTime)}</div>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <div className="font-medium text-gray-800">Check-out</div>
+          <div>{formatTime(attendanceData.checkOutTime)}</div>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <div className="font-medium text-gray-800">Break</div>
+          <div>{attendanceData.totalBreakTime ? `${attendanceData.totalBreakTime} mins` : '--'}</div>
         </div>
       </div>
     </div>

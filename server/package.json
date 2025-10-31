@@ -19,7 +19,8 @@
     "html2canvas": "^1.4.1",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.3",
-    "mongoose": "^8.16.4"
+    "mongoose": "^8.16.4",
+    "nodemailer": "^6.10.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

@@ -1,14 +1,32 @@
 const Employee = require('../models/Employee');
 
+// Helper to resolve employee by id or authenticated user
+async function findEmployee({ employeeId, userId }) {
+  if (employeeId) {
+    return Employee.findById(employeeId);
+  }
+
+  if (!userId) {
+    return null;
+  }
+
+  // Prefer matching by userId
+  let employee = await Employee.findOne({ userId });
+  if (employee) {
+    return employee;
+  }
+
+  // Fallback to matching by email if userId not set yet
+  return Employee.findOne({ email: { $regex: new RegExp(`^${userId}$`, 'i') } });
+}
+
 // Get employee profile
 exports.getProfile = async (req, res) => {
   try {
     const { employeeId } = req.params;
+    const userId = req.user?.userId;
 
-    const employee = await Employee.findById(employeeId)
-      .select('-password')
-      .populate('department', 'name')
-      .populate('designation', 'name');
+    const employee = await findEmployee({ employeeId, userId });
 
     if (!employee) {
       return res.status(404).json({ error: 'Employee not found' });
@@ -26,8 +44,7 @@ exports.updateProfile = async (req, res) => {
   try {
     const { employeeId } = req.params;
     const {
-      firstName,
-      lastName,
+      name,
       email,
       phone,
       address,
@@ -36,22 +53,27 @@ exports.updateProfile = async (req, res) => {
 
     // Only allow updating personal information
     const updateData = {};
-    
-    if (firstName) updateData.firstName = firstName;
-    if (lastName) updateData.lastName = lastName;
-    if (email) updateData.email = email;
-    if (phone) updateData.phone = phone;
-    if (address) updateData.address = address;
-    if (emergencyContact) updateData.emergencyContact = emergencyContact;
 
-    // Add update timestamp
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
+    if (address !== undefined) updateData.address = address;
+
+    if (emergencyContact !== undefined) {
+      updateData.emergencyContact = {
+        name: emergencyContact?.name || '',
+        relationship: emergencyContact?.relationship || '',
+        phone: emergencyContact?.phone || '',
+      };
+    }
+
     updateData.lastProfileUpdate = new Date();
 
     const updatedEmployee = await Employee.findByIdAndUpdate(
       employeeId,
       updateData,
       { new: true, runValidators: true }
-    ).select('-password');
+    );
 
     if (!updatedEmployee) {
       return res.status(404).json({ error: 'Employee not found' });
@@ -79,12 +101,12 @@ exports.updateProfilePicture = async (req, res) => {
 
     const updatedEmployee = await Employee.findByIdAndUpdate(
       employeeId,
-      { 
+      {
         profilePicture,
         lastProfileUpdate: new Date()
       },
       { new: true }
-    ).select('-password');
+    );
 
     if (!updatedEmployee) {
       return res.status(404).json({ error: 'Employee not found' });

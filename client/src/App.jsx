@@ -5,6 +5,12 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import HRDashboard from './pages/hr/HRDashboard';
 import SalesDashboard from './pages/sales/SalesDashboard';
 import EmployeeDashboard from './pages/employee/EmployeeDashboard';
+import DashboardHome from './pages/employee/DashboardHome';
+import Attendance from './pages/employee/Attendance';
+import Tasks from './pages/employee/Tasks';
+import Leave from './pages/employee/Leave';
+import Payroll from './pages/employee/Payroll';
+import Profile from './pages/employee/Profile';
 import Settings from './pages/settings/Settings';
 import LeadManagement from './pages/leads/LeadManagement';
 import Invoices from './pages/invoices/Invoices';
@@ -53,7 +59,14 @@ function App() {
           <Route path="/sales" element={<SalesDashboard />} />
         </Route>
         <Route element={<PrivateRoute allowedRoles={['employee']} />}>
-          <Route path="/employee" element={<EmployeeDashboard />} />
+          <Route path="/employee" element={<EmployeeDashboard />}>
+            <Route index element={<DashboardHome />} />
+            <Route path="attendance" element={<Attendance />} />
+            <Route path="tasks" element={<Tasks />} />
+            <Route path="leave" element={<Leave />} />
+            <Route path="payroll" element={<Payroll />} />
+            <Route path="profile" element={<Profile />} />
+          </Route>
         </Route>
       </Routes>
     </Router>

@@ -1,10 +1,15 @@
 import { FaClock, FaCheckSquare, FaStar, FaCalendar } from 'react-icons/fa';
 
 export default function OverviewCards({ dashboardData }) {
+  // Handle null/undefined dashboardData
+  if (!dashboardData) {
+    return null; // Or return a loading/skeleton state
+  }
+
   const cards = [
     {
       title: 'Attendance Rate',
-      value: `${dashboardData.attendanceRate}%`,
+      value: `${dashboardData.attendanceRate || 0}%`,
       period: 'This month',
       icon: FaClock,
       gradient: 'from-pink-500 to-purple-600',
@@ -12,7 +17,7 @@ export default function OverviewCards({ dashboardData }) {
     },
     {
       title: 'Tasks Completed',
-      value: `${dashboardData.tasksCompleted.completed}/${dashboardData.tasksCompleted.total}`,
+      value: `${dashboardData.tasksCompleted?.completed || 0}/${dashboardData.tasksCompleted?.total || 0}`,
       period: 'This week',
       icon: FaCheckSquare,
       gradient: 'from-blue-500 to-cyan-500',
@@ -20,7 +25,7 @@ export default function OverviewCards({ dashboardData }) {
     },
     {
       title: 'Performance',
-      value: `${dashboardData.performance}/5`,
+      value: `${dashboardData.performance || 0}/5`,
       period: 'Last review',
       icon: FaStar,
       gradient: 'from-green-500 to-emerald-500',
@@ -28,7 +33,11 @@ export default function OverviewCards({ dashboardData }) {
     },
     {
       title: 'Leave Balance',
-      value: `${dashboardData.leaveBalance} Days`,
+      value: dashboardData.leaveBalance
+        ? typeof dashboardData.leaveBalance === 'object'
+          ? `${Object.values(dashboardData.leaveBalance).reduce((total, value) => total + (value || 0), 0)} Days`
+          : `${dashboardData.leaveBalance} Days`
+        : '0 Days',
       period: 'Remaining',
       icon: FaCalendar,
       gradient: 'from-orange-500 to-yellow-500',

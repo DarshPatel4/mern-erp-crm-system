@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaSearch, FaBell, FaChevronDown, FaSignOutAlt, FaUser, FaCog } from 'react-icons/fa';
 
-export default function Header({ user, onLogout }) {
+export default function Header({
+  user,
+  notifications = [],
+  onLogout,
+  onMarkAllNotifications,
+  onMarkNotification
+}) {
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'New company policy update', time: '2 hours ago', unread: true },
-    { id: 2, message: 'Leave request approved', time: '1 day ago', unread: true },
-    { id: 3, message: 'Timesheet reminder', time: '2 days ago', unread: true }
-  ]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -43,7 +46,7 @@ export default function Header({ user, onLogout }) {
     return 'Good evening';
   };
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
@@ -76,7 +79,11 @@ export default function Header({ user, onLogout }) {
 
           {/* Notifications */}
           <div className="relative">
-            <button className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors">
+            <button
+              className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors"
+              onClick={onMarkAllNotifications}
+              title={unreadCount ? 'Mark all notifications read' : 'No new notifications'}
+            >
               <FaBell size={20} />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -114,7 +121,31 @@ export default function Header({ user, onLogout }) {
                   <div className="text-xs text-gray-500">{user?.email || 'user@example.com'}</div>
                 </div>
                 
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2">
+                <div className="max-h-64 overflow-y-auto">
+                  {notifications.slice(0, 10).map((notification) => (
+                    <button
+                      key={notification.id || notification._id}
+                      className={`w-full text-left px-4 py-2 text-xs flex flex-col space-y-1 hover:bg-gray-50 ${
+                        notification.isRead ? 'text-gray-600' : 'text-gray-800'
+                      }`}
+                      onClick={() => onMarkNotification?.(notification)}
+                    >
+                      <span className="font-medium">{notification.title}</span>
+                      <span>{notification.message}</span>
+                    </button>
+                  ))}
+                  {notifications.length === 0 && (
+                    <div className="px-4 py-3 text-xs text-gray-500">No notifications yet.</div>
+                  )}
+                </div>
+
+                <button 
+                  onClick={() => {
+                    setShowProfileDropdown(false);
+                    navigate('/employee/profile');
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                >
                   <FaUser size={14} />
                   <span>View Profile</span>
                 </button>

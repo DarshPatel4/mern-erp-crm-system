@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Employee = require('../models/Employee');
 
 const router = express.Router();
 
@@ -28,12 +29,40 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
-    );
-    res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    let employeeId = null;
+    if (user.role === 'employee') {
+      let employee = await Employee.findOne({ userId: user._id });
+
+      if (!employee) {
+        employee = await Employee.findOne({ email: user.email });
+      }
+
+      if (employee && !employee.userId) {
+        employee.userId = user._id;
+        await employee.save();
+      }
+
+      employeeId = employee ? employee._id : null;
+    }
+
+    const tokenPayload = {
+      userId: user._id,
+      role: user.role,
+      ...(employeeId ? { employeeId } : {})
+    };
+
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '1d' });
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        employeeId
+      }
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }

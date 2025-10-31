@@ -12,6 +12,8 @@ export default function HelpSupport() {
     subject: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState({ type: '', text: '' });
 
   const faqs = [
     {
@@ -73,11 +75,48 @@ export default function HelpSupport() {
     setExpandedFAQ(expandedFAQ === id ? null : id);
   };
 
-  const handleContactSubmit = (e) => {
+  const handleContactSubmit = async (e) => {
     e.preventDefault();
-    // In a real application, this would send the form data to the backend
-    alert('Thank you for your message! We will get back to you within 24 hours.');
-    setContactForm({ name: '', email: '', subject: '', message: '' });
+    setIsSubmitting(true);
+    setSubmitMessage({ type: '', text: '' });
+
+    try {
+      const response = await fetch('http://localhost:5000/api/contact/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contactForm),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitMessage({
+          type: 'success',
+          text: data.message || 'Thank you for your message! We will get back to you within 24 hours.'
+        });
+        setContactForm({ name: '', email: '', subject: '', message: '' });
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSubmitMessage({ type: '', text: '' });
+        }, 5000);
+      } else {
+        setSubmitMessage({
+          type: 'error',
+          text: data.error || 'Failed to send message. Please try again later.'
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      setSubmitMessage({
+        type: 'error',
+        text: 'Failed to send message. Please check your connection and try again.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleContactChange = (e) => {
@@ -164,6 +203,18 @@ export default function HelpSupport() {
                   <h2 className="text-2xl font-semibold text-gray-900">Contact Us</h2>
                 </div>
 
+                {submitMessage.text && (
+                  <div
+                    className={`mb-4 p-3 rounded-lg ${
+                      submitMessage.type === 'success'
+                        ? 'bg-green-50 text-green-800 border border-green-200'
+                        : 'bg-red-50 text-red-800 border border-red-200'
+                    }`}
+                  >
+                    {submitMessage.text}
+                  </div>
+                )}
+
                 <form onSubmit={handleContactSubmit} className="space-y-4">
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -231,9 +282,10 @@ export default function HelpSupport() {
 
                   <button
                     type="submit"
-                    className="w-full bg-violet-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+                    disabled={isSubmitting}
+                    className="w-full bg-violet-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-violet-700 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 disabled:bg-violet-400 disabled:cursor-not-allowed"
                   >
-                    Submit Message
+                    {isSubmitting ? 'Sending...' : 'Submit Message'}
                   </button>
                 </form>
 
